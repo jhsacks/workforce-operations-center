@@ -1,327 +1,47 @@
-import React, { useEffect, useState } from 'react';
-import { createRoot } from 'react-dom/client';
-import { CalendarDays, Users, Sparkles, Save, Plus, X, Settings2, Download, GripVertical } from 'lucide-react';
-import './styles.css';
-
-const API = '/api';
-const BASE_ROLES = ['MD', 'RN', 'MA', 'Sonographer', 'FOS'];
-const LANES = ['Admin', 'Off', 'Remote', 'Hospital', 'Vacation'];
-const COLORS = { MD:'#f8d676', RN:'#fda4af', MA:'#86efac', Sonographer:'#c4b5fd', FOS:'#7dd3fc' };
-const deep = value => JSON.parse(JSON.stringify(value));
-
-const fallback = {
-  version: 2,
-  date: '2026-10-12',
-  period: 'Full Day',
-  roles: BASE_ROLES,
-  sites: ['Kennesaw','Smyrna','Douglasville','Avalon','LaGrange','Paulding','Woodstock','Griffin/Sunday'],
-  clinicTypes: {
-    'Standard Cardiology': { mode:'In-person', requirements:{MD:1,RN:0,MA:1,Sonographer:1,FOS:1} },
-    'Double Provider': { mode:'In-person', requirements:{MD:2,RN:1,MA:3,Sonographer:2,FOS:1} },
-    'Fetal Clinic': { mode:'In-person', requirements:{MD:1,RN:0,MA:0,Sonographer:1,FOS:0} },
-    'Hybrid Echo': { mode:'Hybrid', requirements:{MD:1,RN:0,MA:0,Sonographer:1,FOS:1} },
-    'Telemedicine': { mode:'Telemedicine', requirements:{MD:1,RN:0,MA:0,Sonographer:0,FOS:0} },
-    'Remote Echo': { mode:'Remote diagnostics', requirements:{MD:0,RN:0,MA:0,Sonographer:1,FOS:1} }
-  },
-  siteClinics: {Kennesaw:'Standard Cardiology',Smyrna:'Standard Cardiology',Douglasville:'Standard Cardiology',Avalon:'Standard Cardiology',LaGrange:'Hybrid Echo',Paulding:'Standard Cardiology',Woodstock:'Standard Cardiology','Griffin/Sunday':'Standard Cardiology'},
-  staff: [['Dr. Sacks','MD'],['Dr. Makadia','MD'],['Dr. Yaari','MD'],['Raven','RN'],['Micah','MA'],['Kyonna','MA'],['Whittney','MA'],['Kim','Sonographer'],['Brittany','Sonographer'],['Mallory','Sonographer'],['Dannille','FOS'],['Heather','FOS'],['Nicole','FOS'],['Samantha','FOS'],['Jackie','FOS'],['Delaine','Sonographer'],['Marshall','MD']],
-  assignments: {
-    Kennesaw:{MD:['Dr. Sacks'],RN:[],MA:['Micah'],Sonographer:['Kim'],FOS:['Dannille','Heather']},
-    Smyrna:{MD:['Dr. Makadia'],RN:[],MA:['Kyonna'],Sonographer:['Brittany'],FOS:['Nicole']},
-    Douglasville:{MD:['Dr. Yaari'],RN:['Raven'],MA:['Whittney'],Sonographer:['Mallory'],FOS:['Samantha']}
-  },
-  lanes:{Admin:['Jackie'],Off:[],Remote:['Marshall'],Hospital:['Delaine'],Vacation:[]},
-  overrides:{daily:{},weekly:{}},
-  notes:{},
-  audit:[]
-};
-
-function weekStart(value) {
-  const date = new Date(`${value}T12:00:00`);
-  date.setDate(date.getDate() - ((date.getDay() + 6) % 7));
-  return date.toISOString().slice(0,10);
+import React,{useEffect,useState}from'react';
+import{createRoot}from'react-dom/client';
+import{Users,Settings2,Save,Plus,X,Download,Sparkles,GripVertical,MapPin,ChevronDown,ChevronRight,Pencil,Trash2}from'lucide-react';
+import'./styles.css';
+const API='/api',DEFAULT_ROLES=['MD','RN','MA','Sonographer','FOS'],DEFAULT_LANES=['Admin','Off','Remote','Hospital','Vacation'];
+const COLORS={MD:'#f8d676',RN:'#fda4af',MA:'#86efac',Sonographer:'#c4b5fd',FOS:'#7dd3fc'};
+const deep=x=>JSON.parse(JSON.stringify(x));
+const fallback={version:2.1,date:'2026-10-12',period:'Full Day',roles:DEFAULT_ROLES,sites:['Kennesaw','Smyrna','Douglasville','Avalon','LaGrange','Paulding','Woodstock','Griffin/Sunday'],closedSites:[],clinicTypes:{'Standard Cardiology':{mode:'In-person',requirements:{MD:1,RN:0,MA:1,Sonographer:1,FOS:1}},'Double Provider':{mode:'In-person',requirements:{MD:2,RN:1,MA:3,Sonographer:2,FOS:1}},'Fetal Clinic':{mode:'In-person',requirements:{MD:1,RN:0,MA:0,Sonographer:1,FOS:0}},'Hybrid Echo':{mode:'Hybrid',requirements:{MD:1,RN:0,MA:0,Sonographer:1,FOS:1}},Telemedicine:{mode:'Telemedicine',requirements:{MD:1,RN:0,MA:0,Sonographer:0,FOS:0}},'Remote Echo':{mode:'Remote diagnostics',requirements:{MD:0,RN:0,MA:0,Sonographer:1,FOS:1}}},siteClinics:{Kennesaw:'Standard Cardiology',Smyrna:'Standard Cardiology',Douglasville:'Standard Cardiology',Avalon:'Standard Cardiology',LaGrange:'Hybrid Echo',Paulding:'Standard Cardiology',Woodstock:'Standard Cardiology','Griffin/Sunday':'Standard Cardiology'},staff:[['Dr. Sacks','MD'],['Dr. Makadia','MD'],['Dr. Yaari','MD'],['Raven','RN'],['Marshall','RN'],['Micah','MA'],['Kyonna','MA'],['Whittney','MA'],['Kim','Sonographer'],['Brittany','Sonographer'],['Mallory','Sonographer'],['Delaine','Sonographer'],['Dannille','FOS'],['Heather','FOS'],['Nicole','FOS'],['Samantha','FOS'],['Jackie','FOS']],assignments:{Kennesaw:{MD:['Dr. Sacks'],RN:[],MA:['Micah'],Sonographer:['Kim'],FOS:['Dannille','Heather']},Smyrna:{MD:['Dr. Makadia'],RN:[],MA:['Kyonna'],Sonographer:['Brittany'],FOS:['Nicole']},Douglasville:{MD:['Dr. Yaari'],RN:['Raven'],MA:['Whittney'],Sonographer:['Mallory'],FOS:['Samantha']}},lanes:{Admin:['Jackie'],Off:[],Remote:[],Hospital:['Delaine'],Vacation:[]},overrides:{daily:{},weekly:{}},audit:[]};
+function weekStart(v){const d=new Date(v+'T12:00:00');d.setDate(d.getDate()-((d.getDay()+6)%7));return d.toISOString().slice(0,10)}
+function normalize(raw){const d={...deep(fallback),...deep(raw||{})};d.roles=d.roles||DEFAULT_ROLES;d.closedSites=d.closedSites||[];d.lanes={...deep(fallback.lanes),...(d.lanes||{})};d.overrides={daily:{},weekly:{},...(d.overrides||{})};d.assignments=d.assignments||{};d.sites.forEach(s=>{d.siteClinics[s]??='Standard Cardiology';d.assignments[s]??={};d.roles.forEach(r=>d.assignments[s][r]??=[])});return d}
+function App(){
+ const[state,setState]=useState(null),[view,setView]=useState('All Roles'),[tab,setTab]=useState('Board'),[toast,setToast]=useState(''),[prompt,setPrompt]=useState(''),[reply,setReply]=useState('Ask about a location, staffing gap, or requirement.'),[rosterOpen,setRosterOpen]=useState(false),[clinicOpen,setClinicOpen]=useState(false),[locationOpen,setLocationOpen]=useState(false),[collapsedOpen,setCollapsedOpen]=useState(false);
+ useEffect(()=>{fetch(API+'/state').then(r=>r.ok?r.json():Promise.reject()).then(x=>setState(normalize(x))).catch(()=>setState(normalize(fallback)))},[]);
+ if(!state)return <div className="loading">Loading Workforce Operations Center…</div>;
+ const shown=view==='All Roles'?state.roles:[view],activeSites=state.sites.filter(s=>!state.closedSites.includes(s)),closedSites=state.sites.filter(s=>state.closedSites.includes(s));
+ const notify=t=>{setToast(t);setTimeout(()=>setToast(''),1800)};
+ const update=fn=>setState(prev=>{const d=deep(prev);fn(d);return normalize(d)});
+ const effective=site=>{const type=state.siteClinics[site],base={...(state.clinicTypes[type]?.requirements||{})},w=state.overrides.weekly[weekStart(state.date)+'|'+site],day=state.overrides.daily[state.date+'|'+site];return{type,source:day?'Daily':w?'Weekly':'Baseline',requirements:{...base,...w,...day}}};
+ const occupied=new Set([...state.sites.flatMap(s=>state.roles.flatMap(r=>state.assignments[s]?.[r]||[])),...Object.values(state.lanes).flat()]);
+ function removeEverywhere(name,d){d.sites.forEach(s=>d.roles.forEach(r=>d.assignments[s][r]=d.assignments[s][r].filter(n=>n!==name)));Object.keys(d.lanes).forEach(l=>d.lanes[l]=d.lanes[l].filter(n=>n!==name))}
+ function assign(name,site,role){const p=state.staff.find(x=>x[0]===name&&x[1]===role);if(!p)return notify(`Choose a ${role} from the roster`);update(d=>{removeEverywhere(name,d);d.assignments[site][role].push(name);d.audit.unshift({at:new Date().toISOString(),action:`Assigned ${name} to ${site} as ${role}`})});notify(`Assigned ${name}`)}
+ function moveLane(name,lane){update(d=>{removeEverywhere(name,d);d.lanes[lane].push(name);d.audit.unshift({at:new Date().toISOString(),action:`Moved ${name} to ${lane}`})})}
+ function remove(name){update(d=>removeEverywhere(name,d))}
+ function setClinic(site,type){update(d=>{d.siteClinics[site]=type;d.audit.unshift({at:new Date().toISOString(),action:`Changed ${site} clinic to ${type}`})})}
+ function closeSite(site){update(d=>{if(!d.closedSites.includes(site))d.closedSites.push(site);d.audit.unshift({at:new Date().toISOString(),action:`Closed ${site} for ${d.date}`})});notify(`${site} collapsed`)}
+ function reopenSite(site){update(d=>d.closedSites=d.closedSites.filter(x=>x!==site))}
+ async function save(){try{const r=await fetch(API+'/state',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(state)});if(!r.ok)throw Error();notify('Saved')}catch{localStorage.setItem('woc-v2',JSON.stringify(state));notify('Saved in browser')}}
+ function generate(){let count=0;update(d=>{activeSites.forEach(site=>{const req=effective(site).requirements;d.roles.forEach(role=>{while(d.assignments[site][role].length<(req[role]||0)){const busy=new Set([...d.sites.flatMap(s=>d.assignments[s][role]),...Object.values(d.lanes).flat()]);const p=d.staff.find(x=>x[1]===role&&!busy.has(x[0]));if(!p)break;d.assignments[site][role].push(p[0]);count++}})});d.audit.unshift({at:new Date().toISOString(),action:`Generated ${count} draft assignments`})});notify(`${count} draft assignment(s)`)}
+ function ask(){const q=prompt.toLowerCase(),site=state.sites.find(s=>q.includes(s.toLowerCase())),role=state.roles.find(r=>q.includes(r.toLowerCase()));if(!site||!role)return setReply('Mention both a location and a role, for example: “Why does Kennesaw need one sonographer?”');const e=effective(site),names=state.assignments[site][role],need=e.requirements[role]||0;setReply(`${site} · ${role}\nClinic: ${e.type}\nSource: ${e.source}\nRequired: ${need}\nAssigned: ${names.join(', ')||'None'}\nMissing: ${Math.max(0,need-names.length)}`)}
+ function exportData(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(state,null,2)],{type:'application/json'}));a.download=`workforce-${state.date}.json`;a.click()}
+ return <div><header><div><h1>Workforce Operations Center</h1><p>Daily huddle staffing board</p></div><div className="headerActions"><button onClick={()=>setLocationOpen(true)}><MapPin/>Locations</button><button onClick={()=>setRosterOpen(true)}><Users/>Roster</button><button onClick={()=>setClinicOpen(true)}><Settings2/>Baselines</button><button className="primary" onClick={save}><Save/>Save</button></div></header>
+ <nav>{['Board','Audit'].map(x=><button className={tab===x?'active':''} onClick={()=>setTab(x)} key={x}>{x}</button>)}</nav>
+ {tab==='Board'&&<><section className="toolbar"><label>Date<input type="date" value={state.date} onChange={e=>setState({...state,date:e.target.value})}/></label><label>Period<select value={state.period} onChange={e=>setState({...state,period:e.target.value})}><option>Full Day</option><option>AM</option><option>PM</option></select></label><label>View<select value={view} onChange={e=>setView(e.target.value)}><option>All Roles</option>{state.roles.map(r=><option key={r}>{r}</option>)}</select></label><button className="coverage" onClick={generate}><Sparkles/>Generate Draft Coverage</button><button onClick={exportData}><Download/>Export</button></section>
+ <div className="layout"><main><div className="legend"><span className="covered">Covered</span><span className="shortage">Missing</span><span className="excess">Extra</span><span className="none">Not needed</span></div><div className="tableWrap"><table><thead><tr><th>Location / Clinic</th>{shown.map(r=><th key={r}>{r}</th>)}</tr></thead><tbody>{activeSites.map(site=><tr key={site}><td className="site"><div className="siteTop"><strong>{site}</strong><button title="Close and collapse" onClick={()=>closeSite(site)}><X/></button></div><select value={state.siteClinics[site]} onChange={e=>setClinic(site,e.target.value)}>{Object.keys(state.clinicTypes).map(t=><option key={t}>{t}</option>)}</select></td>{shown.map(role=><BoardCell key={role} site={site} role={role} state={state} details={effective(site)} assign={assign} remove={remove}/>)}</tr>)}</tbody></table></div>
+ {closedSites.length>0&&<div className="closedSites"><button onClick={()=>setCollapsedOpen(!collapsedOpen)}>{collapsedOpen?<ChevronDown/>:<ChevronRight/>}{closedSites.length} closed location(s)</button>{collapsedOpen&&<div>{closedSites.map(s=><button className="reopen" key={s} onClick={()=>reopenSite(s)}>{s} · Reopen</button>)}</div>}</div>}<Lanes state={state} moveLane={moveLane}/></main>
+ <aside><section className="assistant"><h2><Sparkles/>Staffing Assistant</h2><textarea value={prompt} onChange={e=>setPrompt(e.target.value)} placeholder="Why does Kennesaw need one sonographer?"/><button className="primary" onClick={ask}>Ask</button><pre>{reply}</pre></section><section><h2>Unassigned Staff</h2>{state.staff.filter(x=>(view==='All Roles'||x[1]===view)&&!occupied.has(x[0])).map(x=><StaffPill key={x[0]} name={x[0]} role={x[1]}/>)}</section></aside></div></>}
+ {tab==='Audit'&&<div className="page"><h2>Audit</h2>{state.audit.map((a,i)=><div className="audit" key={i}><b>{a.action}</b><span>{a.at}</span></div>)}</div>}
+ {rosterOpen&&<RosterModal state={state} update={update} close={()=>setRosterOpen(false)} notify={notify}/>} {clinicOpen&&<ClinicModal state={state} update={update} close={()=>setClinicOpen(false)} notify={notify}/>} {locationOpen&&<LocationModal state={state} update={update} close={()=>setLocationOpen(false)} notify={notify}/>} {toast&&<div className="toast">{toast}</div>}</div>
 }
-
-function normalize(raw) {
-  const state = {...deep(fallback), ...deep(raw || {})};
-  state.roles = state.roles?.length ? state.roles : BASE_ROLES;
-  state.assignments ||= {};
-  state.lanes ||= {};
-  state.overrides ||= {daily:{},weekly:{}};
-  state.overrides.daily ||= {};
-  state.overrides.weekly ||= {};
-  state.audit ||= [];
-  state.notes ||= {};
-  LANES.forEach(lane => state.lanes[lane] ||= []);
-  state.sites.forEach(site => {
-    state.assignments[site] ||= {};
-    state.roles.forEach(role => state.assignments[site][role] ||= []);
-    state.siteClinics[site] ||= Object.keys(state.clinicTypes)[0];
-  });
-  Object.values(state.clinicTypes).forEach(type => state.roles.forEach(role => type.requirements[role] ??= 0));
-  return state;
-}
-
-function App() {
-  const [state, setState] = useState(null);
-  const [view, setView] = useState('All Roles');
-  const [selected, setSelected] = useState(null);
-  const [tab, setTab] = useState('Daily Huddle');
-  const [toast, setToast] = useState('');
-  const [prompt, setPrompt] = useState('');
-  const [reply, setReply] = useState('Ask about staffing, coverage, clinic requirements, or vacations.');
-  const [clinicOpen, setClinicOpen] = useState(false);
-  const [rosterOpen, setRosterOpen] = useState(false);
-  const [locationOpen, setLocationOpen] = useState(false);
-
-  useEffect(() => {
-    fetch(`${API}/state`)
-      .then(response => response.ok ? response.json() : Promise.reject())
-      .then(data => setState(normalize(data)))
-      .catch(() => setState(normalize(fallback)));
-  }, []);
-
-  const notify = message => {
-    setToast(message);
-    window.setTimeout(() => setToast(''), 1800);
-  };
-
-  if (!state) return <div className="loading">Loading Workforce Operations Center…</div>;
-
-  const roles = state.roles;
-  const shown = view === 'All Roles' ? roles : [view];
-  const occupied = new Set([
-    ...state.sites.flatMap(site => roles.flatMap(role => state.assignments[site]?.[role] || [])),
-    ...Object.values(state.lanes).flat()
-  ]);
-
-  function effective(site, targetDate = state.date) {
-    const type = state.siteClinics[site];
-    const base = {...(state.clinicTypes[type]?.requirements || {})};
-    const weekly = state.overrides.weekly[`${weekStart(targetDate)}|${site}`];
-    const daily = state.overrides.daily[`${targetDate}|${site}`];
-    return {
-      type,
-      source: daily ? 'Daily override' : weekly ? 'Weekly override' : 'Baseline',
-      requirements: {...base, ...weekly, ...daily}
-    };
-  }
-
-  function update(mutator) {
-    setState(previous => {
-      const next = deep(previous);
-      mutator(next);
-      return next;
-    });
-  }
-
-  function removeEverywhere(name, draft) {
-    draft.sites.forEach(site => draft.roles.forEach(role => {
-      draft.assignments[site][role] = draft.assignments[site][role].filter(item => item !== name);
-    }));
-    LANES.forEach(lane => draft.lanes[lane] = draft.lanes[lane].filter(item => item !== name));
-  }
-
-  function assign(name, site, role) {
-    const person = state.staff.find(item => item[0] === name);
-    if (!person || person[1] !== role) return notify(`Choose a ${role} from the roster`);
-    update(draft => {
-      removeEverywhere(name, draft);
-      draft.assignments[site][role].push(name);
-      draft.audit.unshift({at:new Date().toISOString(), action:`Assigned ${name} to ${site} as ${role}`});
-    });
-    notify(`Assigned ${name}`);
-  }
-
-  function moveToLane(name, lane) {
-    update(draft => {
-      removeEverywhere(name, draft);
-      draft.lanes[lane].push(name);
-      draft.audit.unshift({at:new Date().toISOString(), action:`Moved ${name} to ${lane}`});
-    });
-    notify(`Moved ${name} to ${lane}`);
-  }
-
-  function remove(name) {
-    update(draft => removeEverywhere(name, draft));
-  }
-
-  async function save() {
-    try {
-      const response = await fetch(`${API}/state`, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(state)});
-      if (!response.ok) throw new Error('Save failed');
-      notify('Saved');
-    } catch {
-      localStorage.setItem('workforce-v2-state', JSON.stringify(state));
-      notify('Saved in browser');
-    }
-  }
-
-  function exportData() {
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(new Blob([JSON.stringify(state,null,2)], {type:'application/json'}));
-    link.download = `workforce-${state.date}.json`;
-    link.click();
-  }
-
-  function generateCoverage() {
-    const changes = [];
-    update(draft => {
-      draft.sites.forEach(site => {
-        const requirement = effective(site).requirements;
-        draft.roles.forEach(role => {
-          while (draft.assignments[site][role].length < (requirement[role] || 0)) {
-            const busy = new Set([
-              ...draft.sites.flatMap(other => draft.assignments[other][role]),
-              ...Object.values(draft.lanes).flat()
-            ]);
-            const person = draft.staff.find(item => item[1] === role && !busy.has(item[0]));
-            if (!person) break;
-            draft.assignments[site][role].push(person[0]);
-            changes.push(`${person[0]} → ${site} (${role})`);
-          }
-        });
-      });
-      draft.audit.unshift({at:new Date().toISOString(), action:`Generated ${changes.length} draft assignments`});
-    });
-    setReply(changes.length ? `Draft coverage generated:\n${changes.map(item => `• ${item}`).join('\n')}\n\nReview and save when ready.` : 'No qualified unassigned staff were available for the remaining gaps.');
-    notify(`${changes.length} draft assignments`);
-  }
-
-  function askAssistant() {
-    const query = prompt.toLowerCase();
-    const site = state.sites.find(item => query.includes(item.toLowerCase())) || selected?.site;
-    const role = roles.find(item => query.includes(item.toLowerCase())) || selected?.role;
-    if (!site || !role) {
-      setReply('Mention a location and role, or click a staffing cell first. Example: “Why does Kennesaw need one sonographer?”');
-      return;
-    }
-    const details = effective(site);
-    const names = state.assignments[site][role];
-    const required = details.requirements[role] || 0;
-    setReply(`${site} · ${role}\nClinic: ${details.type}\nRequirement source: ${details.source}\nRequired: ${required}\nAssigned: ${names.join(', ') || 'None'}\nMissing: ${Math.max(0, required - names.length)}\n\nThe requirement can be changed for the selected day, the selected week, or the permanent clinic baseline.`);
-  }
-
-  return <div className="app">
-    <header>
-      <div><h1>Workforce Operations Center</h1><p>Daily huddle, clinic templates, staffing coverage, and transparent requirements</p></div>
-      <div className="headerActions">
-        <button onClick={() => setLocationOpen(true)}>Locations</button>
-        <button onClick={() => setRosterOpen(true)}><Users/>Roster</button>
-        <button onClick={() => setClinicOpen(true)}><Settings2/>Clinic Types</button>
-        <button className="primary" onClick={save}><Save/>Save</button>
-      </div>
-    </header>
-
-    <nav>{['Daily Huddle','Weekly Overview','Audit'].map(item => <button key={item} className={tab===item?'active':''} onClick={() => setTab(item)}>{item}</button>)}</nav>
-
-    {tab === 'Daily Huddle' && <>
-      <section className="toolbar">
-        <label>Date<input type="date" value={state.date} onChange={event => setState({...state,date:event.target.value})}/></label>
-        <label>Period<select value={state.period} onChange={event => setState({...state,period:event.target.value})}><option>Full Day</option><option>AM</option><option>PM</option></select></label>
-        <label>View<select value={view} onChange={event => setView(event.target.value)}><option>All Roles</option>{roles.map(role => <option key={role}>{role}</option>)}</select></label>
-        <button className="coverage" onClick={generateCoverage}><Sparkles/>Generate Draft Coverage</button>
-        <button onClick={exportData}><Download/>Export</button>
-      </section>
-
-      <div className="content">
-        <main>
-          <div className="legend"><span className="lg covered">Covered</span><span className="lg shortage">Missing</span><span className="lg excess">Extra</span><span className="lg none">Not needed</span></div>
-          <div className="tableWrap"><table><thead><tr><th>Staff Scheduling</th>{shown.map(role => <th key={role}>{role}</th>)}</tr></thead><tbody>
-            {state.sites.map(site => <tr key={site}>
-              <td className="site"><strong>{site}</strong><small>{state.siteClinics[site]}</small></td>
-              {shown.map(role => <BoardCell key={role} site={site} role={role} state={state} details={effective(site)} onAssign={assign} onMove={assign} onRemove={remove} onSelect={() => setSelected({site,role})}/>) }
-            </tr>)}
-          </tbody></table></div>
-          <Lanes state={state} onDrop={moveToLane}/>
-        </main>
-
-        <aside>
-          <section className="assistant"><h2><Sparkles/>Staffing Assistant</h2><textarea value={prompt} onChange={event => setPrompt(event.target.value)} placeholder="Why does Kennesaw need one sonographer? Cover today's absences."/><button className="primary" onClick={askAssistant}>Ask</button><pre>{reply}</pre></section>
-          <section><h2>Unassigned Staff</h2><p className="muted">Drag to a cell, or type a name inside the cell.</p>{state.staff.filter(item => (view==='All Roles'||item[1]===view) && !occupied.has(item[0])).map(item => <StaffPill key={item[0]} name={item[0]} role={item[1]}/>)}</section>
-          {selected && <CellEditor selected={selected} state={state} update={update} effective={effective} notify={notify}/>} 
-        </aside>
-      </div>
-    </>}
-
-    {tab === 'Weekly Overview' && <Weekly state={state} effective={effective}/>} 
-    {tab === 'Audit' && <Audit state={state}/>} 
-    {clinicOpen && <ClinicModal state={state} update={update} close={() => setClinicOpen(false)} notify={notify}/>} 
-    {rosterOpen && <RosterModal state={state} update={update} close={() => setRosterOpen(false)} notify={notify}/>} 
-    {locationOpen && <LocationModal state={state} update={update} close={() => setLocationOpen(false)} notify={notify}/>} 
-    {toast && <div className="toast" role="status">{toast}</div>}
-  </div>;
-}
-
-function StaffPill({name, role, onRemove}) {
-  return <div className="pill" draggable onDragStart={event => event.dataTransfer.setData('application/json',JSON.stringify({name,role}))} style={{'--role':COLORS[role] || '#cbd5e1'}}>
-    <GripVertical/><span>{name}</span><small>{role}</small>{onRemove && <button onClick={onRemove} aria-label={`Remove ${name}`}><X/></button>}
-  </div>;
-}
-
-function BoardCell({site, role, state, details, onAssign, onMove, onRemove, onSelect}) {
-  const [typed,setTyped] = useState('');
-  const required = details.requirements[role] || 0;
-  const names = state.assignments[site][role];
-  const status = required===0 && !names.length ? 'none' : names.length<required ? 'shortage' : names.length>required ? 'excess' : 'covered';
-  return <td className={`cell ${status}`} onClick={onSelect} onDragOver={event => event.preventDefault()} onDrop={event => {event.preventDefault();const item=JSON.parse(event.dataTransfer.getData('application/json'));onMove(item.name,site,role)}}>
-    {names.map(name => <StaffPill key={name} name={name} role={role} onRemove={() => onRemove(name)}/>)}
-    <div className="cellStatus"><b>Required {required}</b> · Assigned {names.length} · Missing {Math.max(0,required-names.length)}<br/><span>{details.source}</span></div>
-    <div className="assignBox"><input list={`list-${site}-${role}`} value={typed} onChange={event => setTyped(event.target.value)} onClick={event => event.stopPropagation()} placeholder={`Type or choose ${role}`}/><datalist id={`list-${site}-${role}`}>{state.staff.filter(item => item[1]===role).map(item => <option key={item[0]} value={item[0]}/>)}</datalist><button onClick={event => {event.stopPropagation();onAssign(typed,site,role);setTyped('')}}><Plus/></button></div>
-  </td>;
-}
-
-function Lanes({state,onDrop}) {
-  return <div className="lanes">{LANES.map(lane => <div className="lane" key={lane}><strong>{lane}</strong><div onDragOver={event => event.preventDefault()} onDrop={event => {event.preventDefault();const item=JSON.parse(event.dataTransfer.getData('application/json'));onDrop(item.name,lane)}}>{state.lanes[lane].map(name => {const role=state.staff.find(item => item[0]===name)?.[1]||'';return <StaffPill key={name} name={name} role={role}/>})}<span className="dropHint">Drop staff here</span></div></div>)}</div>;
-}
-
-function CellEditor({selected,state,update,effective,notify}) {
-  const details = effective(selected.site);
-  const [value,setValue] = useState(details.requirements[selected.role] || 0);
-  const [scope,setScope] = useState('daily');
-  function apply() {
-    update(draft => {
-      if (scope === 'baseline') draft.clinicTypes[details.type].requirements[selected.role] = +value;
-      else {
-        const key = `${scope==='daily'?draft.date:weekStart(draft.date)}|${selected.site}`;
-        draft.overrides[scope][key] = {...(draft.overrides[scope][key]||{}), [selected.role]:+value};
-      }
-      draft.audit.unshift({at:new Date().toISOString(),action:`Changed ${selected.site} ${selected.role} requirement to ${value} (${scope})`});
-    });
-    notify('Requirement updated');
-  }
-  function changeClinic(type) {
-    update(draft => {draft.siteClinics[selected.site]=type;draft.audit.unshift({at:new Date().toISOString(),action:`Changed ${selected.site} clinic type to ${type}`});});
-    notify('Clinic type updated');
-  }
-  return <section className="selected"><h2>{selected.site} · {selected.role}</h2><label>Clinic type<select value={details.type} onChange={event => changeClinic(event.target.value)}>{Object.keys(state.clinicTypes).map(type => <option key={type}>{type}</option>)}</select></label><p><b>Source:</b> {details.source}<br/><b>Assigned:</b> {state.assignments[selected.site][selected.role].join(', ')||'None'}<br/><b>Required:</b> {details.requirements[selected.role]||0}<br/><b>Missing:</b> {Math.max(0,(details.requirements[selected.role]||0)-state.assignments[selected.site][selected.role].length)}</p><div className="reqEditor"><label>Required {selected.role}<input type="number" min="0" value={value} onChange={event => setValue(event.target.value)}/></label><label>Apply to<select value={scope} onChange={event => setScope(event.target.value)}><option value="daily">Selected day</option><option value="weekly">Selected week</option><option value="baseline">Permanent baseline</option></select></label><button onClick={apply}>Apply</button></div></section>;
-}
-
-function Modal({title,children,close}) { return <div className="modalBack"><div className="modal"><button className="close" onClick={close}><X/></button><h2>{title}</h2>{children}</div></div>; }
-
-function ClinicModal({state,update,close,notify}) {
-  const [name,setName]=useState(''); const [mode,setMode]=useState('In-person'); const [requirements,setRequirements]=useState(Object.fromEntries(state.roles.map(role=>[role,0])));
-  function add(){if(!name.trim())return;update(draft=>{draft.clinicTypes[name]={mode,requirements};draft.audit.unshift({at:new Date().toISOString(),action:`Added clinic type ${name}`});});notify('Clinic type added');setName('');}
-  return <Modal title="Clinic Types & Baselines" close={close}><p className="muted">Create in-person, hybrid, telemedicine, remote diagnostic, outreach, or specialty clinic types.</p><div className="typeGrid">{Object.entries(state.clinicTypes).map(([type,data])=><div className="typeCard" key={type}><b>{type}</b><small>{data.mode}</small><p>{state.roles.map(role=>`${role} ${data.requirements[role]||0}`).join(' · ')}</p></div>)}</div><h3>Add clinic type</h3><div className="formGrid"><label>Name<input value={name} onChange={event=>setName(event.target.value)} placeholder="Acworth Hybrid Echo"/></label><label>Mode<select value={mode} onChange={event=>setMode(event.target.value)}>{['In-person','Hybrid','Telemedicine','Remote diagnostics','Administrative','Outreach'].map(item=><option key={item}>{item}</option>)}</select></label></div><div className="roleReqs">{state.roles.map(role=><label key={role}>{role}<input type="number" min="0" value={requirements[role]} onChange={event=>setRequirements({...requirements,[role]:+event.target.value})}/></label>)}</div><button className="primary" onClick={add}>Add Clinic Type</button></Modal>;
-}
-
-function RosterModal({state,update,close,notify}) {
-  const [name,setName]=useState(''); const [role,setRole]=useState(state.roles[0]);
-  function add(){if(!name.trim())return;update(draft=>{draft.staff.push([name,role]);draft.audit.unshift({at:new Date().toISOString(),action:`Added ${name} to roster as ${role}`});});notify('Staff member added');setName('');}
-  return <Modal title="Staff Roster" close={close}><div className="rosterList">{state.staff.map(item=><StaffPill key={item[0]} name={item[0]} role={item[1]}/>)}</div><h3>Add staff member</h3><div className="formGrid"><label>Name<input value={name} onChange={event=>setName(event.target.value)}/></label><label>Role<select value={role} onChange={event=>setRole(event.target.value)}>{state.roles.map(item=><option key={item}>{item}</option>)}</select></label></div><button className="primary" onClick={add}>Add to Roster</button></Modal>;
-}
-
-function LocationModal({state,update,close,notify}) {
-  const [name,setName]=useState(''); const [clinic,setClinic]=useState(Object.keys(state.clinicTypes)[0]);
-  function add(){if(!name.trim()||state.sites.includes(name))return;update(draft=>{draft.sites.push(name);draft.siteClinics[name]=clinic;draft.assignments[name]=Object.fromEntries(draft.roles.map(role=>[role,[]]));draft.audit.unshift({at:new Date().toISOString(),action:`Added location ${name}`});});notify('Location added');setName('');}
-  return <Modal title="Locations" close={close}><div className="typeGrid">{state.sites.map(site=><div className="typeCard" key={site}><b>{site}</b><small>{state.siteClinics[site]}</small></div>)}</div><h3>Add location</h3><div className="formGrid"><label>Name<input value={name} onChange={event=>setName(event.target.value)} placeholder="Acworth"/></label><label>Default clinic type<select value={clinic} onChange={event=>setClinic(event.target.value)}>{Object.keys(state.clinicTypes).map(item=><option key={item}>{item}</option>)}</select></label></div><button className="primary" onClick={add}>Add Location</button></Modal>;
-}
-
-function Weekly({state,effective}) {
-  const days=['Monday','Tuesday','Wednesday','Thursday','Friday'];
-  return <div className="page"><h2><CalendarDays/>Week of {weekStart(state.date)}</h2><p className="muted">The weekly view summarizes active locations, assignments, and shortages using baseline, weekly, and daily requirements.</p><div className="weekCards">{days.map(day=>{let gaps=0;state.sites.forEach(site=>state.roles.forEach(role=>{const need=effective(site).requirements[role]||0;gaps+=Math.max(0,need-state.assignments[site][role].length)}));return <div className="weekCard" key={day}><b>{day}</b><span>{state.sites.length} locations · {gaps} staffing gaps</span></div>})}</div></div>;
-}
-
-function Audit({state}) { return <div className="page"><h2>Audit & Accountability</h2>{state.audit.length?state.audit.map((item,index)=><div className="audit" key={`${item.at}-${index}`}><b>{item.action}</b><span>{item.at}</span></div>):<p>No changes recorded yet.</p>}</div>; }
-
+function BoardCell({site,role,state,details,assign,remove}){const[typed,setTyped]=useState(''),need=details.requirements[role]||0,names=state.assignments[site][role],status=need===0&&!names.length?'none':names.length<need?'shortage':names.length>need?'excess':'covered';return <td className={`cell ${status}`} onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const x=JSON.parse(e.dataTransfer.getData('application/json'));assign(x.name,site,role)}}>{names.map(n=><StaffPill key={n} name={n} role={role} onRemove={()=>remove(n)}/>)}<div className="compactStatus" title={`${details.source}: required ${need}, assigned ${names.length}`}><b>{names.length}/{need}</b><span>{names.length<need?`−${need-names.length} missing`:names.length>need?`+${names.length-need} extra`:details.source}</span></div><div className="assignBox"><input list={`pick-${site}-${role}`} value={typed} onChange={e=>setTyped(e.target.value)} placeholder={`Add ${role}`}/><datalist id={`pick-${site}-${role}`}>{state.staff.filter(x=>x[1]===role).map(x=><option key={x[0]} value={x[0]}/>)}</datalist><button onClick={()=>{assign(typed,site,role);setTyped('')}}><Plus/></button></div></td>}
+function StaffPill({name,role,onRemove}){return <div className="pill" draggable onDragStart={e=>e.dataTransfer.setData('application/json',JSON.stringify({name,role}))} style={{'--role':COLORS[role]||'#cbd5e1'}}><GripVertical/><span>{name}</span><small>{role}</small>{onRemove&&<button onClick={onRemove}><X/></button>}</div>}
+function Lanes({state,moveLane}){return <div className="lanes">{Object.keys(state.lanes).map(l=><div className="lane" key={l}><strong>{l}</strong><div onDragOver={e=>e.preventDefault()} onDrop={e=>{e.preventDefault();const x=JSON.parse(e.dataTransfer.getData('application/json'));moveLane(x.name,l)}}>{state.lanes[l].map(n=><StaffPill key={n} name={n} role={state.staff.find(x=>x[0]===n)?.[1]||''}/>)}</div></div>)}</div>}
+function Modal({title,children,close}){return <div className="modalBack"><div className="modal"><button className="close" onClick={close}><X/></button><h2>{title}</h2>{children}</div></div>}
+function RosterModal({state,update,close,notify}){const[name,setName]=useState(''),[role,setRole]=useState(state.roles[0]),[editing,setEditing]=useState(null),sorted=[...state.staff].sort((a,b)=>a[1].localeCompare(b[1])||a[0].localeCompare(b[0]));function savePerson(){if(!name.trim())return;update(d=>{if(editing){const old=editing[0];d.staff=d.staff.map(x=>x[0]===old?[name.trim(),role]:x);d.sites.forEach(s=>d.roles.forEach(r=>d.assignments[s][r]=d.assignments[s][r].map(n=>n===old?name.trim():n)));Object.keys(d.lanes).forEach(l=>d.lanes[l]=d.lanes[l].map(n=>n===old?name.trim():n))}else d.staff.push([name.trim(),role])});setName('');setEditing(null);notify(editing?'Roster updated':'Staff added')}function edit(p){setEditing(p);setName(p[0]);setRole(p[1])}function del(p){update(d=>{d.staff=d.staff.filter(x=>x[0]!==p[0]);d.sites.forEach(s=>d.roles.forEach(r=>d.assignments[s][r]=d.assignments[s][r].filter(n=>n!==p[0])));Object.keys(d.lanes).forEach(l=>d.lanes[l]=d.lanes[l].filter(n=>n!==p[0]))});notify('Removed from roster')}return <Modal title="Editable Roster" close={close}><div className="rosterTable">{sorted.map(p=><div className="rosterRow" key={p[0]}><span className="roleTag" style={{background:COLORS[p[1]]||'#e2e8f0'}}>{p[1]}</span><b>{p[0]}</b><button onClick={()=>edit(p)}><Pencil/></button><button className="danger" onClick={()=>del(p)}><Trash2/></button></div>)}</div><h3>{editing?'Edit staff member':'Add staff member'}</h3><div className="formGrid"><label>Name<input value={name} onChange={e=>setName(e.target.value)}/></label><label>Role<select value={role} onChange={e=>setRole(e.target.value)}>{state.roles.map(r=><option key={r}>{r}</option>)}</select></label></div><button className="primary" onClick={savePerson}>{editing?'Save Changes':'Add Staff'}</button>{editing&&<button onClick={()=>{setEditing(null);setName('')}}>Cancel</button>}</Modal>}
+function ClinicModal({state,update,close,notify}){const[editing,setEditing]=useState(null),[name,setName]=useState(''),[mode,setMode]=useState('In-person'),[req,setReq]=useState(Object.fromEntries(state.roles.map(r=>[r,0])));function edit(n,v){setEditing(n);setName(n);setMode(v.mode);setReq({...v.requirements})}function saveType(){if(!name.trim())return;update(d=>{if(editing&&editing!==name){d.clinicTypes[name]={mode,requirements:req};delete d.clinicTypes[editing];Object.keys(d.siteClinics).forEach(s=>{if(d.siteClinics[s]===editing)d.siteClinics[s]=name})}else d.clinicTypes[name]={mode,requirements:req}});setEditing(null);setName('');setReq(Object.fromEntries(state.roles.map(r=>[r,0])));notify('Baseline saved')}return <Modal title="Clinic Types & Baselines" close={close}><div className="baselineGrid">{Object.entries(state.clinicTypes).map(([n,v])=><button className="baselineCard" key={n} onClick={()=>edit(n,v)}><b>{n}</b><small>{v.mode}</small><span>{state.roles.map(r=>`${r} ${v.requirements[r]||0}`).join(' · ')}</span></button>)}</div><h3>{editing?'Edit Baseline':'Add Clinic Type'}</h3><div className="formGrid"><label>Name<input value={name} onChange={e=>setName(e.target.value)}/></label><label>Mode<select value={mode} onChange={e=>setMode(e.target.value)}>{['In-person','Hybrid','Telemedicine','Remote diagnostics','Administrative'].map(x=><option key={x}>{x}</option>)}</select></label></div><div className="roleReqs">{state.roles.map(r=><label key={r}>{r}<input type="number" min="0" value={req[r]||0} onChange={e=>setReq({...req,[r]:+e.target.value})}/></label>)}</div><button className="primary" onClick={saveType}>{editing?'Save Baseline':'Add Clinic Type'}</button></Modal>}
+function LocationModal({state,update,close,notify}){const[name,setName]=useState('');function add(){if(!name.trim())return;update(d=>{d.sites.push(name.trim());d.siteClinics[name.trim()]=Object.keys(d.clinicTypes)[0];d.assignments[name.trim()]={};d.roles.forEach(r=>d.assignments[name.trim()][r]=[])});setName('');notify('Location added')}return <Modal title="Locations" close={close}><div className="locationList">{state.sites.map(s=><div key={s}><b>{s}</b><span>{state.closedSites.includes(s)?'Closed':'Open'}</span></div>)}</div><h3>Add Location</h3><div className="formGrid"><label>Name<input value={name} onChange={e=>setName(e.target.value)}/></label></div><button className="primary" onClick={add}>Add Location</button></Modal>}
 createRoot(document.getElementById('root')).render(<App/>);
