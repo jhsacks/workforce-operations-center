@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: workforce-operations-center
+    runtime: docker
+    plan: starter
+    healthCheckPath: /api/health
+    envVars:
+      - key: WORKFORCE_DB_PATH
+        value: /var/data/workforce.db
+    disk:
+      name: workforce-data
+      mountPath: /var/data
+      sizeGB: 1
