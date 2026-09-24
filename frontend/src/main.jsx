@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo,useState}from'react';
+import React,{useEffect,useState}from'react';
 import{createRoot}from'react-dom/client';
 import{Users,Settings2,Save,Plus,X,Download,Sparkles,GripVertical,MapPin,ChevronDown,ChevronRight,Pencil,Trash2,CalendarDays,Building2,Copy,CheckCircle2,AlertTriangle}from'lucide-react';
 import'./styles.css';
@@ -14,7 +14,14 @@ function App(){const[state,setState]=useState(null),[view,setView]=useState('All
  useEffect(()=>{fetch(API+'/state').then(r=>r.ok?r.json():Promise.reject()).then(x=>setState(normalize(x))).catch(()=>setState(normalize(fallback)))},[]);if(!state)return <div className="loading">Loading Workforce Operations Center…</div>;
  const notify=t=>{setToast(t);setTimeout(()=>setToast(''),1800)},update=fn=>setState(prev=>{const d=deep(prev);fn(d);return normalize(d)}),day=dayName(state.date),base=state.templates[day],schedule=state.dayOverrides[state.date]||base,shown=view==='All Roles'?state.roles:[view],activeSites=state.sites.filter(s=>!schedule.closedSites.includes(s)),closedSites=state.sites.filter(s=>schedule.closedSites.includes(s));
  const effective=site=>{const type=schedule.siteClinics[site]||Object.keys(state.clinicTypes)[0];return{type,requirements:state.clinicTypes[type]?.requirements||{}}};
- const occupied=useMemo(()=>new Set([...state.sites.flatMap(s=>state.roles.flatMap(r=>schedule.assignments[s]?.[r]||[])),...Object.values(schedule.lanes||{}).flat()]),[schedule,state.sites,state.roles]);
+ const occupied = new Set([
+  ...state.sites.flatMap(s =>
+    state.roles.flatMap(r =>
+      schedule.assignments[s]?.[r] || []
+    )
+  ),
+  ...Object.values(schedule.lanes || {}).flat()
+]);
  function changeSchedule(fn,template=false){update(d=>{const target=template?d.templates[day]:(d.dayOverrides[d.date]??=deep(d.templates[day]));fn(target,d);d.audit.unshift({at:new Date().toISOString(),action:`Updated ${template?day+' template':d.date}`})})}
  function removeEverywhere(name,target){target&&state.sites.forEach(s=>state.roles.forEach(r=>target.assignments[s][r]=target.assignments[s][r].filter(n=>n!==name)));target&&Object.keys(target.lanes).forEach(l=>target.lanes[l]=target.lanes[l].filter(n=>n!==name))}
  function assign(name,site,role){const p=state.staff.find(x=>x.name===name&&x.role===role&&x.active);if(!p)return notify(`Choose an active ${role}`);changeSchedule(t=>{removeEverywhere(name,t);t.assignments[site][role].push(name)});notify(`Assigned ${name}`)}function remove(name){changeSchedule(t=>removeEverywhere(name,t))}function moveLane(name,lane){changeSchedule(t=>{removeEverywhere(name,t);t.lanes[lane].push(name)})}function setClinic(site,type){changeSchedule(t=>t.siteClinics[site]=type)}function closeSite(site){changeSchedule(t=>{if(!t.closedSites.includes(site))t.closedSites.push(site)});notify(`${site} collapsed`)}function reopenSite(site){changeSchedule(t=>t.closedSites=t.closedSites.filter(x=>x!==site))}
